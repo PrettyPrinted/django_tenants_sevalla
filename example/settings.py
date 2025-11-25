@@ -19,20 +19,35 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
 # Application definition
 
-INSTALLED_APPS = [
+SHARED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_tenants',
+    'app',
 ]
+
+TENANT_APPS = ["dashboard"]
+
+INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+TENANT_MODEL = "app.Client"
+
+TENANT_DOMAIN_MODEL = "app.Domain"
+
+ROOT_URLCONF = 'example.urls_tenants'
+PUBLIC_SCHEMA_URLCONF = 'example.urls'
+SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -63,8 +78,12 @@ WSGI_APPLICATION = 'example.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': env.db(),
+    'default': env.db(engine="django_tenants.postgresql_backend"),
 }
+
+DATABASE_ROUTERS = (
+    'django_tenants.routers.TenantSyncRouter',
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
